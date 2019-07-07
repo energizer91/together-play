@@ -1,3 +1,24 @@
 {
-
+  "name": "Play videos together",
+  "version": "1.0",
+  "description": "Control playback of videos together!",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "ws://together-play.herokuapp.com:8080/*",
+    "https://together-play.herokuapp.com/*",
+    "ws://localhost:8080/*",
+    "http://localhost:3000/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://*/*"],
+      "js": ["contentscript.js"]
+    }
+  ],
+  "browser_action": {
+    "default_icon": "images/icon-stopped.png",
+    "default_popup": "popup.html"
+  },
+  "manifest_version": 2
 }
