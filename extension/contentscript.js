@@ -246,19 +246,15 @@ class Player {
             return;
           }
 
-          this.container.currentTime = data.time;
-
           if (this.waiting) {
             this.waiting = false;
-            this.container.play();
+            this.container.currentTime = data.time;
+            // this.container.play();
           }
           break;
         case 'WAITING':
-          if (this.waiting) {
-            break;
-          }
-          this.container.pause();
           this.waiting = true;
+          // this.container.pause();
           break;
         // case 'CANPLAYTHROUGH':
         //   if (this.waiting) {
@@ -266,11 +262,14 @@ class Player {
         //   }
         //   break;
         case 'PAUSE':
+          // if (this.waiting) {
+          //   break;
+          // }
           if (this.container.paused) {
             break;
           }
 
-          this.container.currentTime = data.time;
+          // this.container.currentTime = data.time;
           this.container.pause();
           break;
       }
