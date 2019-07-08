@@ -1,5 +1,11 @@
-const wss = require('./modules/websocket');
 const app = require('./modules/web');
+const http = require('http');
+const WebSocket = require('ws');
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({server});
+
+server.listen(app.get('port'), () => console.log('App is listening on port', app.get('port')));
 
 const connections = new Map();
 

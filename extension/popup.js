@@ -22,6 +22,10 @@ function sendMessage(message) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+  const localhostCheck = document.getElementById('localhost');
+  const containerField = document.getElementById('container-field');
+  const playButton = document.getElementById('play-button');
+  const pauseButton = document.getElementById('pause-button');
   const idLabel = document.getElementById('id-label');
   const status = document.getElementById('status');
   const getIdButton = document.getElementById('get-id-button');
@@ -32,13 +36,48 @@ document.addEventListener('DOMContentLoaded', function () {
     status.textContent = text;
   }
 
+  function setHash(hash) {
+    idLabel.textContent = 'Session: ' + hash;
+  }
+
+  function synchronizeStatus(status) {
+    if (!status) {
+      return;
+    }
+
+    if (status.container) {
+      containerField.textContent = status.container;
+    }
+
+    if (status.id) {
+      setHash(status.id);
+    }
+
+    if (status.state) {
+      setStatus(status.state);
+    }
+
+    localhostCheck.checked = status.localhost;
+  }
+
+  localhostCheck.addEventListener('change', e => {
+    sendMessage({type: 'change_host', localhost: e.target.checked});
+  });
+
+  playButton.addEventListener('click', () => {
+    sendMessage({type: 'play'});
+  });
+
+  pauseButton.addEventListener('click', () => {
+    sendMessage({type: 'pause'});
+  });
+
   getIdButton.addEventListener('click', () => {
     setStatus('Getting new session id');
 
     sendMessage({type: 'getId'})
       .then(response => {
-        setStatus('New session: ' + response);
-        idLabel.textContent = 'Session: ' + response;
+        setHash(response)
       });
   });
 
@@ -56,4 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
         setStatus('Connection complete: ' + response);
       });
   });
+
+  sendMessage({type: 'status'})
+    .then(status => synchronizeStatus(status));
 });

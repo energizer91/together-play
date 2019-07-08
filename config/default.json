@@ -2,9 +2,6 @@
   "database": {
     "url": ""
   },
-  "websocket": {
-    "port": 8080
-  },
   "http": {
     "port": 3000
   }
