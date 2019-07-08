@@ -1,9 +1,17 @@
+let port = null;
+
 function getCurrentTab() {
   return new Promise(resolve => {
     chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
       resolve(tabs[0]);
     });
   })
+}
+
+function createPort(tab) {
+  port = chrome.tabs.connect(tab.id);
+
+  return port;
 }
 
 function sendMessageToTab(tab, message) {
@@ -17,13 +25,22 @@ function sendMessageToTab(tab, message) {
 
 function sendMessage(message) {
   console.log('Popup: Sending message', message);
-  return getCurrentTab()
-    .then(tab => sendMessageToTab(tab.id, message));
+
+  if (!port) {
+    getCurrentTab()
+      .then(tab => createPort(tab))
+      .then(port => port.postMessage(message));
+
+    return;
+  }
+
+  port.postMessage(message)
 }
 
 document.addEventListener('DOMContentLoaded', function () {
   const localhostCheck = document.getElementById('localhost');
   const containerField = document.getElementById('container-field');
+  const findContainerButton = document.getElementById('find-container');
   const playButton = document.getElementById('play-button');
   const pauseButton = document.getElementById('pause-button');
   const idLabel = document.getElementById('id-label');
@@ -73,17 +90,10 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   getIdButton.addEventListener('click', () => {
-    setStatus('Getting new session id');
-
-    sendMessage({type: 'getId'})
-      .then(response => {
-        setHash(response)
-      });
+    sendMessage({type: 'getId'});
   });
 
   connectButton.addEventListener('click', () => {
-    setStatus('Start connecting to ws server');
-
     const id = setIdInput.value;
 
     if (!id) {
@@ -91,11 +101,43 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     sendMessage({type: 'connect', id: id})
-      .then(response => {
-        setStatus('Connection complete: ' + response);
-      });
   });
 
-  sendMessage({type: 'status'})
-    .then(status => synchronizeStatus(status));
+  findContainerButton.addEventListener('click', () => {
+    sendMessage({type: 'findContainer'});
+  });
+
+  function connectPort() {
+    getCurrentTab()
+      .then(tab => createPort(tab))
+      .then(port => {
+
+        sendMessage({type: 'status'});
+
+        port.onDisconnect.addListener(error => {
+          console.log('port disconnect error lol kek', error);
+
+          connectPort();
+        });
+
+        port.onMessage.addListener(message => {
+          switch (message.type) {
+            case 'setId':
+              setHash(message.hash);
+              sendMessage({type: 'connect', id: message.hash});
+              break;
+            case 'status':
+              synchronizeStatus(message.status);
+              break;
+            case 'state':
+              setStatus(message.state);
+              break;
+            default:
+              console.log('unknown message', message);
+          }
+        })
+      });
+  }
+
+  connectPort();
 });
