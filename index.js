@@ -36,17 +36,22 @@ wss.on('connection', (ws, req) => {
   connection.users.add(ws);
 
   ws.on('close', (code, reason) => {
-    console.log('websocket close', code, reason);
+    console.log('websocket close', session, code, reason);
 
     const connection = connections.get(session);
 
     if (connection.users.has(ws)) {
       connection.users.delete(ws);
     }
+
+    if (connection.users.size === 0) {
+      connections.delete(session);
+      console.log('session', session, 'has been removed');
+    }
   });
 
   ws.on('error', (code, reason) => {
-    console.log('websocket error', code, reason);
+    console.log('websocket error', session, code, reason);
 
     const connection = connections.get(session);
 

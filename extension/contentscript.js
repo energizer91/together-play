@@ -20,8 +20,9 @@ class Player {
     this.container = null;
     this.connection = null;
     this.retries = 0;
-    this.playInitiator = false;
     this.waiting = false;
+    this.remoteStatus = '';
+    this.status = '';
 
     this.changeHost();
   }
@@ -76,114 +77,72 @@ class Player {
     this.setState('set_container');
     this.container = container;
 
-    this.container.addEventListener('playing', () => {
-      console.log('event playing');
-      this.send({
-        type: 'PLAYING',
-        time: this.container.currentTime
-      });
-    });
+    this.container.onplaying = () => {
+      this.setStatus('playing');
+    };
 
-    this.container.addEventListener('play', () => {
-      console.log('event play');
-      this.playInitiator = true;
-      this.send({
-        type: 'PLAY',
-        time: this.container.currentTime
-      });
-    });
+    this.container.onplay = () => {
+      this.setStatus('play');
+    };
 
-    this.container.addEventListener('pause', () => {
-      console.log('event pause');
-      this.send({
-        type: 'PAUSE',
-        time: this.container.currentTime
-      });
-    });
+    this.container.onpause = () => {
+      this.setStatus('pause');
+    };
 
-    this.container.addEventListener('error', () => {
-      console.log('event error');
-      this.send({
-        type: 'ERROR'
-      });
-    });
+    this.container.onerror = () => {
+      // this.setStatus('error');
+    };
 
-    this.container.addEventListener('ended', () => {
-      console.log('event ended');
-      this.send({
-        type: 'ENDED'
-      });
-    });
+    this.container.onended = () => {
+      // this.setStatus('ended');
+    };
 
-    this.container.addEventListener('timeupdate', () => {
-      console.log('event timeupdate');
-      // this.send({
-      //   type: 'TIMEUPDATE',
-      //   time: this.container.currentTime
-      // });
-    });
+    this.container.ontimeupdate = () => {
+      // this.setStatus('timeupdate', true);
+    };
 
-    this.container.addEventListener('canplaythrough', () => {
-      console.log('event canplaythrough');
-      // this.send({
-      //   type: 'CANPLAYTHROUGH',
-      //   time: this.container.currentTime
-      // });
-    });
+    this.container.oncanplaythrough = () => {
+      // this.setStatus('canplaythrough', true);
+    };
 
-    this.container.addEventListener('waiting', () => {
-      console.log('event waiting');
-      this.send({
-        type: 'WAITING',
-        time: this.container.currentTime
-      });
-    });
+    this.container.onwaiting = () => {
+      this.setStatus('waiting');
+    };
 
-    this.container.addEventListener('volumechange', () => {
-      console.log('event volumechange');
-      // this.send({
-      //   type: 'VOLUMECHANGE',
-      //   time: this.container.currentTime
-      // });
-    });
+    this.container.onseeking = () => {
+      // this.setStatus('onseeking');
+    };
 
-    this.container.addEventListener('progress', () => {
-      console.log('event progress');
-      // this.send({
-      //   type: 'PROGRESS',
-      //   time: this.container.currentTime
-      // });
-    });
+    this.container.onseeked = () => {
+      // this.setStatus('onseeked');
+    };
 
-    this.container.addEventListener('loadstart', () => {
-      console.log('event loadstart');
-      // this.send({
-      //   type: 'LOADSTART',
-      //   time: this.container.currentTime
-      // });
-    });
+    this.container.onvolumechange = () => {
+      // this.setStatus('volumechange', true);
+    };
 
-    this.container.addEventListener('loadeddata', () => {
-      console.log('event loadeddata');
-      // this.send({
-      //   type: 'LOADEDDATA',
-      //   time: this.container.currentTime
-      // });
-    });
+    this.container.onprogress = () => {
+      // this.setStatus('progress', true);
+    };
 
-    this.container.addEventListener('abort', () => {
-      console.log('event abort');
-      // this.send({
-      //   type: 'ABORT',
-      //   time: this.container.currentTime
-      // });
-    });
+    this.container.onloadstart = () => {
+      // this.setStatus('loadstart');
+    };
+
+    this.container.onloadeddata = () => {
+      // this.setStatus('loadeddata');
+    };
+
+    this.container.onabort = () => {
+      // this.setStatus('abort');
+    };
   }
 
   reconnect() {
     this.retries++;
 
     if (this.retries > 5) {
+      // setTimeout(() => this.connect(this.id));
       throw new Error('Too many retries');
     }
 
@@ -222,7 +181,7 @@ class Player {
     });
 
     this.connection.addEventListener('message', (message) => {
-      console.log('Got message', message);
+      // console.log('Got message', message);
 
       if (!this.container) {
         return;
@@ -231,47 +190,11 @@ class Player {
       const data = JSON.parse(message.data);
 
       switch (data.type) {
-        case 'PLAY':
-          this.playInitiator = false;
-
-          if (!this.container.paused) {
-            break;
-          }
-
-          this.container.currentTime = data.time;
-          this.container.play();
+        case 'STATUS':
+          this.setRemoteStatus(data.status, data);
           break;
-        case 'PLAYING':
-          if (this.playInitiator) {
-            return;
-          }
-
-          if (this.waiting) {
-            this.waiting = false;
-            this.container.currentTime = data.time;
-            // this.container.play();
-          }
-          break;
-        case 'WAITING':
-          this.waiting = true;
-          // this.container.pause();
-          break;
-        // case 'CANPLAYTHROUGH':
-        //   if (this.waiting) {
-        //     this.container.play();
-        //   }
-        //   break;
-        case 'PAUSE':
-          // if (this.waiting) {
-          //   break;
-          // }
-          if (this.container.paused) {
-            break;
-          }
-
-          // this.container.currentTime = data.time;
-          this.container.pause();
-          break;
+        default:
+          console.log('Unknown message type', message);
       }
     });
   }
@@ -281,9 +204,73 @@ class Player {
       return;
     }
 
-    console.log('Sending message', message);
+    // console.log('Sending message', message);
 
     this.connection.send(JSON.stringify(message));
+  }
+
+
+  setStatus(status, skipSend = false) {
+    let slave;
+
+    if (this.remoteStatus === status && (status === 'play' || status === 'pause' || status === 'playing')) {
+      console.log('slave looool');
+      slave = true;
+    }
+
+    this.status = status;
+
+    if (!skipSend) {
+      this.send({
+        type: 'STATUS',
+        status: status,
+        time: this.container.currentTime,
+        silent: slave
+      });
+    }
+  }
+
+  setRemoteStatus(newRemoteStatus, data) {
+    const previousRemoteStatus = this.remoteStatus;
+
+    if (data.silent) {
+      console.log('silently update remote status');
+      this.remoteStatus = newRemoteStatus;
+      return;
+    }
+
+    switch (newRemoteStatus) {
+      case 'play':
+        if (this.status === 'pause') {
+          if (Math.abs(this.container.currentTime - data.time) >= 0.5) {
+            console.log('time mismatch');
+            this.container.currentTime = data.time;
+          }
+        }
+        this.container.play();
+        break;
+      case 'playing':
+        if (previousRemoteStatus === 'playing') {
+          console.log('attempt to play when already playing');
+          break;
+        }
+
+        if (previousRemoteStatus === 'waiting') {
+          this.container.currentTime = data.time;
+          break;
+        }
+        break;
+      case 'pause':
+        this.container.pause();
+        break;
+      case 'waiting':
+        console.log('i need to wait');
+        break;
+      default:
+        console.log('hz chto delat', newRemoteStatus);
+    }
+
+    this.remoteStatus = newRemoteStatus;
   }
 }
 
