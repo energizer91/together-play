@@ -20,11 +20,12 @@ class Player {
     this.container = null;
     this.connection = null;
     this.retries = 0;
-    this.waiting = false;
     this.remoteStatus = '';
     this.status = '';
 
     this.changeHost();
+
+    this.onVideoEvent = this.onVideoEvent.bind(this);
   }
 
   setState(state) {
@@ -72,70 +73,44 @@ class Player {
       })
   }
 
+  onVideoEvent(e) {
+    this.setStatus(e.type);
+  }
+
+  removeContainer() {
+    console.log('Removing container', this.container);
+
+    this.setState('remove_container');
+
+    this.container.removeEventListener('play', this.onVideoEvent);
+    this.container.removeEventListener('playing', this.onVideoEvent);
+    this.container.removeEventListener('pause', this.onVideoEvent);
+    this.container.removeEventListener('waiting', this.onVideoEvent);
+
+    this.container = null;
+  }
+
   setContainer(container) {
+    if (this.container) {
+      this.removeContainer();
+    }
+
     console.log('Setting video container as', container);
+
     this.setState('set_container');
     this.container = container;
 
-    this.container.onplaying = () => {
-      this.setStatus('playing');
-    };
+    this.container.addEventListener('play', this.onVideoEvent);
+    this.container.addEventListener('playing', this.onVideoEvent);
+    this.container.addEventListener('pause', this.onVideoEvent);
+    this.container.addEventListener('waiting', this.onVideoEvent);
 
-    this.container.onplay = () => {
-      this.setStatus('play');
-    };
+    this.send({
+      type: 'CONTAINER',
+      container: this.container && this.container.currentSrc
+    });
 
-    this.container.onpause = () => {
-      this.setStatus('pause');
-    };
-
-    this.container.onerror = () => {
-      // this.setStatus('error');
-    };
-
-    this.container.onended = () => {
-      // this.setStatus('ended');
-    };
-
-    this.container.ontimeupdate = () => {
-      // this.setStatus('timeupdate', true);
-    };
-
-    this.container.oncanplaythrough = () => {
-      // this.setStatus('canplaythrough', true);
-    };
-
-    this.container.onwaiting = () => {
-      this.setStatus('waiting');
-    };
-
-    this.container.onseeking = () => {
-      // this.setStatus('onseeking');
-    };
-
-    this.container.onseeked = () => {
-      // this.setStatus('onseeked');
-    };
-
-    this.container.onvolumechange = () => {
-      // this.setStatus('volumechange', true);
-    };
-
-    this.container.onprogress = () => {
-      // this.setStatus('progress', true);
-    };
-
-    this.container.onloadstart = () => {
-      // this.setStatus('loadstart');
-    };
-
-    this.container.onloadeddata = () => {
-      // this.setStatus('loadeddata');
-    };
-
-    this.container.onabort = () => {
-      // this.setStatus('abort');
-    };
+    this.setState('ready');
   }
 
   reconnect() {
@@ -175,7 +150,7 @@ class Player {
 
     this.connection.addEventListener('error', error => {
       console.log('websocket error', error);
-      this.setState('disconnected');
+      this.setState('connection error');
 
       this.reconnect();
     });
@@ -193,6 +168,8 @@ class Player {
         case 'STATUS':
           this.setRemoteStatus(data.status, data);
           break;
+        case 'CONTAINER':
+          console.log('Remote container', data.container);
         default:
           console.log('Unknown message type', message);
       }
@@ -208,7 +185,6 @@ class Player {
 
     this.connection.send(JSON.stringify(message));
   }
-
 
   setStatus(status, skipSend = false) {
     let slave;
