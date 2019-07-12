@@ -10,6 +10,8 @@ function getVideoContainers(d = document) {
 
 let globalPort = null;
 
+const slaveStatuses = ['play', 'playing', 'pause', 'seeked'];
+
 class Player {
   constructor() {
     this.localhost = false;
@@ -22,6 +24,12 @@ class Player {
     this.retries = 0;
     this.remoteStatus = '';
     this.status = '';
+
+    this.playing = false;
+    this.playable = false;
+
+    this.remotePlaying = false;
+    this.remotePlayable = false;
 
     this.changeHost();
 
@@ -86,6 +94,7 @@ class Player {
     this.container.removeEventListener('playing', this.onVideoEvent);
     this.container.removeEventListener('pause', this.onVideoEvent);
     this.container.removeEventListener('waiting', this.onVideoEvent);
+    this.container.removeEventListener('seeked', this.onVideoEvent);
 
     this.container = null;
   }
@@ -104,6 +113,8 @@ class Player {
     this.container.addEventListener('playing', this.onVideoEvent);
     this.container.addEventListener('pause', this.onVideoEvent);
     this.container.addEventListener('waiting', this.onVideoEvent);
+    this.container.addEventListener('canplaythrough', this.onVideoEvent);
+    this.container.addEventListener('seeked', this.onVideoEvent);
 
     this.send({
       type: 'CONTAINER',
@@ -136,7 +147,6 @@ class Player {
     this.connection = new WebSocket(this.websocketUrl + '/' + this.id);
 
     this.connection.addEventListener('open', () => {
-      this.retries = 0;
       this.setState('connected');
     });
 
@@ -144,7 +154,9 @@ class Player {
       console.log('websocket close', code, reason);
       this.setState('disconnected');
 
-      this.reconnect();
+      if (code !== 4000) { // Session invalid
+        this.reconnect();
+      }
     });
 
 
@@ -156,8 +168,6 @@ class Player {
     });
 
     this.connection.addEventListener('message', (message) => {
-      // console.log('Got message', message);
-
       if (!this.container) {
         return;
       }
@@ -170,6 +180,13 @@ class Player {
           break;
         case 'CONTAINER':
           console.log('Remote container', data.container);
+          break;
+        case 'PLAYING':
+          this.setRemotePlaying(data.state);
+          break;
+        case 'PLAYABLE':
+          this.setRemotePlayable(data.state);
+          break;
         default:
           console.log('Unknown message type', message);
       }
@@ -181,71 +198,86 @@ class Player {
       return;
     }
 
-    // console.log('Sending message', message);
-
     this.connection.send(JSON.stringify(message));
   }
 
-  setStatus(status, skipSend = false) {
-    let slave;
-
-    if (this.remoteStatus === status && (status === 'play' || status === 'pause' || status === 'playing')) {
-      console.log('slave looool');
-      slave = true;
-    }
-
-    this.status = status;
-
-    if (!skipSend) {
-      this.send({
-        type: 'STATUS',
-        status: status,
-        time: this.container.currentTime,
-        silent: slave
-      });
-    }
-  }
-
-  setRemoteStatus(newRemoteStatus, data) {
-    const previousRemoteStatus = this.remoteStatus;
-
-    if (data.silent) {
-      console.log('silently update remote status');
-      this.remoteStatus = newRemoteStatus;
+  setPlaying(playing = true) {
+    if (this.playing === playing) {
       return;
     }
 
-    switch (newRemoteStatus) {
-      case 'play':
-        if (this.status === 'pause') {
-          if (Math.abs(this.container.currentTime - data.time) >= 0.5) {
-            console.log('time mismatch');
-            this.container.currentTime = data.time;
-          }
-        }
-        this.container.play();
-        break;
-      case 'playing':
-        if (previousRemoteStatus === 'playing') {
-          console.log('attempt to play when already playing');
-          break;
-        }
+    this.playing = playing;
 
-        if (previousRemoteStatus === 'waiting') {
-          this.container.currentTime = data.time;
-          break;
-        }
-        break;
-      case 'pause':
-        this.container.pause();
-        break;
-      case 'waiting':
-        console.log('i need to wait');
-        break;
-      default:
-        console.log('hz chto delat', newRemoteStatus);
+    this.send({
+      type: 'PLAYING',
+      state: playing,
+      time: this.container.currentTime
+    });
+  }
+
+  setPlayable(playable = true) {
+    if (this.playable === playable) {
+      return;
     }
 
+    this.playable = playable;
+
+    this.send({
+      type: 'PLAYABLE',
+      state: playable,
+      time: this.container.currentTime
+    });
+  }
+
+  setRemotePlaying(remotePlaying = true) {
+    this.remotePlaying = remotePlaying;
+
+    if (remotePlaying === this.playing) {
+      return;
+    }
+
+    if (remotePlaying) {
+      this.container.play();
+    } else {
+      this.container.pause();
+    }
+  }
+
+  setRemotePlayable(remotePlayable = true) {
+    this.remotePlayable = remotePlayable;
+
+    if (remotePlayable === this.playable) {
+      return;
+    }
+
+    if (!remotePlayable) {
+      this.container.pause();
+    } else {
+      this.container.play();
+    }
+  }
+
+  setStatus(status) {
+    if (status === 'waiting') {
+      this.setPlayable(false);
+    }
+
+    if (status === 'canplaythrough') {
+      this.setPlayable(true);
+    }
+
+    if (status === 'pause') {
+      this.setPlaying(false);
+    }
+
+    if (status === 'play') {
+      this.setPlaying(true);
+    }
+
+    this.status = status;
+  }
+
+  setRemoteStatus(newRemoteStatus) {
     this.remoteStatus = newRemoteStatus;
   }
 }
@@ -294,6 +326,7 @@ chrome.runtime.onConnect.addListener(function (port) {
           });
         break;
       case 'connect':
+        player.retries = 0;
         player.connect(message.id);
         break;
       case 'play':

@@ -27,7 +27,8 @@ wss.on('connection', (ws, req) => {
 
   if (!connections.has(session)) {
     console.error('Session invalid');
-    ws.close(1000, 'Session invalid');
+    ws.close(4000, 'Session invalid');
+
     return;
   }
 
