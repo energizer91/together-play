@@ -22,8 +22,6 @@ class Player {
     this.container = null;
     this.connection = null;
     this.retries = 0;
-    this.remoteStatus = '';
-    this.status = '';
 
     this.playing = false;
     this.playable = false;
@@ -175,17 +173,14 @@ class Player {
       const data = JSON.parse(message.data);
 
       switch (data.type) {
-        case 'STATUS':
-          this.setRemoteStatus(data.status, data);
-          break;
         case 'CONTAINER':
           console.log('Remote container', data.container);
           break;
         case 'PLAYING':
-          this.setRemotePlaying(data.state);
+          this.setRemotePlaying(data.state, data.silent, data.time);
           break;
         case 'PLAYABLE':
-          this.setRemotePlayable(data.state);
+          this.setRemotePlayable(data.state, data.time);
           break;
         default:
           console.log('Unknown message type', message);
@@ -206,12 +201,23 @@ class Player {
       return;
     }
 
+    let silent = false;
+
+    if (this.remotePlaying === playing) {
+      silent = true;
+    }
+
+    if (!this.remotePlayable && !playing) {
+      silent = true;
+    }
+
     this.playing = playing;
 
     this.send({
       type: 'PLAYING',
       state: playing,
-      time: this.container.currentTime
+      time: this.container.currentTime,
+      silent
     });
   }
 
@@ -229,11 +235,24 @@ class Player {
     });
   }
 
-  setRemotePlaying(remotePlaying = true) {
+  correctTime(time) {
+    console.log('time mismatch');
+    this.container.currentTime = time;
+  }
+
+  setRemotePlaying(remotePlaying = true, silent = false, time) {
     this.remotePlaying = remotePlaying;
 
     if (remotePlaying === this.playing) {
       return;
+    }
+
+    if (silent) {
+      return;
+    }
+
+    if (remotePlaying && time && Math.abs(this.container.currentTime - time) >= 0.5) {
+      this.correctTime(time);
     }
 
     if (remotePlaying) {
@@ -243,11 +262,15 @@ class Player {
     }
   }
 
-  setRemotePlayable(remotePlayable = true) {
+  setRemotePlayable(remotePlayable = true, time) {
     this.remotePlayable = remotePlayable;
 
-    if (remotePlayable === this.playable) {
-      return;
+    // if (remotePlayable === this.playable) {
+    //   return;
+    // }
+
+    if (time && Math.abs(this.container.currentTime - time) >= 0.5) {
+      this.correctTime(time);
     }
 
     if (!remotePlayable) {
@@ -273,12 +296,6 @@ class Player {
     if (status === 'play') {
       this.setPlaying(true);
     }
-
-    this.status = status;
-  }
-
-  setRemoteStatus(newRemoteStatus) {
-    this.remoteStatus = newRemoteStatus;
   }
 }
 
