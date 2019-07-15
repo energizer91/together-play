@@ -153,6 +153,19 @@ class Player {
     });
   }
 
+  setId(id) {
+    this.id = id;
+
+    if (!globalPort) {
+      return;
+    }
+
+    globalPort.postMessage({
+      type: 'setId',
+      id
+    });
+  }
+
   disconnect() {
     if (this.connection) {
       this.connection.close();
