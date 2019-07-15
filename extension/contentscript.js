@@ -168,6 +168,13 @@ class Player {
     });
   }
 
+  setIcon(connected = false) {
+    chrome.runtime.sendMessage({
+      action: 'updateIcon',
+      connected
+    });
+  }
+
   disconnect() {
     if (this.connection) {
       this.connection.close();
@@ -178,6 +185,8 @@ class Player {
     }
 
     this.setState('disconnected');
+
+    this.setIcon(false);
 
     this.remoteContainer = '';
   }
@@ -196,6 +205,7 @@ class Player {
     this.connection.addEventListener('open', () => {
       this.setId(id);
       this.setState('connected');
+      this.setIcon(true);
 
       this.pingInterval = setInterval(() => {
         this.send({type: 'PING'});
@@ -217,7 +227,7 @@ class Player {
         this.setState('session_invalid');
         this.setId('');
         this.disconnect();
-      } else {
+      } else if (e.code === 1006) {
         this.reconnect();
       }
     });
