@@ -1,0 +1,95 @@
+#root {
+    padding: 10px;
+    box-sizing: border-box;
+    width: 300px;
+    font-family: Helvetica, sans-serif;
+    color: #555;
+    font-size: 14px;
+}
+
+input[type=text] {
+    appearance: none;
+    border: 1px solid #D1D1D1;
+    padding: 6px 10px;
+    border-radius: 4px;
+    box-shadow: none;
+    background: #fff;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 280px;
+    font-size: 15px;
+    height: 38px;
+    margin-bottom: 10px;
+}
+
+button {
+    display: inline-block;
+    background-color: transparent;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid #bbb;
+    height: 38px;
+    line-height: 38px;
+    padding: 0 20px;
+    letter-spacing: .1rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.button-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.button-container button {
+    margin: 0 5px;
+}
+
+.statusbar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.statusbar p {
+    margin: 0;
+}
+
+.statusbar__settings {
+    height: 16px;
+    cursor: pointer;
+}
+
+.statusbar__settings img {
+    height: 100%;
+}
+
+.video-caption {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.container-select {
+    padding: 0;
+}
+
+.container-select li {
+    cursor: pointer;
+    height: 25px;
+    line-height: 25px;
+    padding: 5px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.container-select li:hover {
+    background-color: #bbb;
+    color: white;
+}

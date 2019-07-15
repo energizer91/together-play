@@ -5,12 +5,12 @@ function getVideoContainers(d = document) {
     return [];
   }
 
-  return d.querySelectorAll('video');
+  return Array.from(d.querySelectorAll('video'));
 }
 
 let globalPort = null;
-
-const slaveStatuses = ['play', 'playing', 'pause', 'seeked'];
+let containers = [];
+let containerIndex = 0;
 
 class Player {
   constructor() {
@@ -44,7 +44,7 @@ class Player {
     globalPort.postMessage({
       type: 'state',
       state: state
-    })
+    });
   }
 
   changeHost(localhost = false) {
@@ -133,6 +133,31 @@ class Player {
     this.connect(this.id);
   }
 
+  disconnect() {
+    console.log('websocket disconnect');
+
+    if (this.connection) {
+      this.connection.close();
+    }
+
+    this.setId('');
+
+    this.setState('disconnected');
+  }
+
+  setId(id) {
+    this.id = id;
+
+    if (!globalPort) {
+      return;
+    }
+
+    globalPort.postMessage({
+      type: 'setId',
+      id
+    });
+  }
+
   connect(id) {
     if (this.connection) {
       console.log('Connection already exists!');
@@ -145,20 +170,24 @@ class Player {
     this.connection = new WebSocket(this.websocketUrl + '/' + this.id);
 
     this.connection.addEventListener('open', () => {
+      this.setId(id);
       this.setState('connected');
     });
 
-    this.connection.addEventListener('close', (code, reason) => {
-      console.log('websocket close', code, reason);
-      this.setState('disconnected');
+    this.connection.addEventListener('close', (e) => {
+      console.log('websocket close', e, e.code, e.reason);
+      this.setId('');
 
-      if (code !== 4000) { // Session invalid
+      if (e.code === 4000) { // Session invalid
+        this.setState('session_invalid');
+      } else {
         this.reconnect();
       }
     });
 
 
     this.connection.addEventListener('error', error => {
+      this.setId('');
       console.log('websocket error', error);
       this.setState('connection error');
 
@@ -302,14 +331,19 @@ class Player {
 let player = null;
 
 function initialize() {
-  const containers = getVideoContainers();
+  containers = getVideoContainers();
+  containerIndex = containers.length - 1;
 
   console.log(containers.length + ' video tag(s) available for together playback');
 
   if (containers.length) {
-    player = new Player();
-    player.setContainer(containers[containers.length - 1]);
+    createPlayer(containerIndex);
   }
+}
+
+function createPlayer(index) {
+  player = new Player();
+  player.setContainer(containers[index]);
 }
 
 chrome.runtime.onConnect.addListener(function (port) {
@@ -327,6 +361,18 @@ chrome.runtime.onConnect.addListener(function (port) {
       return;
     }
 
+    if (message.type === 'pick_container') {
+      if (message.frame !== location.href) {
+        return;
+      }
+
+      console.log('picking container', containers[message.index]);
+      containers[message.index].classList.remove('together-play__preselected');
+      createPlayer(message.index);
+
+      return;
+    }
+
     if (!player) {
       return;
     }
@@ -334,17 +380,43 @@ chrome.runtime.onConnect.addListener(function (port) {
     console.log('Incoming message', message);
 
     switch (message.type) {
+      case 'get_containers':
+        port.postMessage({
+          type: 'containers',
+          containers: containers.map(container => ({
+            frame: location.href,
+            container: container.currentSrc
+          }))
+        });
+        break;
+      case 'select_container':
+        if (message.frame !== location.href) {
+          break;
+        }
+
+        containers[message.index].classList.add('together-play__preselected');
+        break;
+      case 'deselect_container':
+        if (message.frame !== location.href) {
+          break;
+        }
+
+        containers[message.index].classList.remove('together-play__preselected');
+        break;
       case 'getId':
         player.getUniqueId()
-          .then(hash => {
-            console.log('Responding with hash', hash);
+          .then(id => {
+            console.log('Responding with id', id);
 
-            port.postMessage({type: 'setId', hash: hash});
+            port.postMessage({type: 'setId', id, connect: !player.connection});
           });
         break;
       case 'connect':
         player.retries = 0;
         player.connect(message.id);
+        break;
+      case 'disconnect':
+        player.disconnect();
         break;
       case 'play':
         player.container.play();

@@ -14,6 +14,7 @@
     {
       "matches": ["https://*/*"],
       "js": ["contentscript.js"],
+      "css": ["style.css"],
       "all_frames": true
     }
   ],
@@ -21,5 +22,6 @@
     "default_icon": "images/icon-stopped.png",
     "default_popup": "popup.html"
   },
-  "manifest_version": 2
+  "manifest_version": 2,
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }
