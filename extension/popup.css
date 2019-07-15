@@ -59,7 +59,7 @@ button {
 }
 
 .statusbar p {
-    margin: 0;
+    margin: 0 0 10px 0;
 }
 
 .statusbar__settings {
@@ -92,4 +92,9 @@ button {
 .container-select li:hover {
     background-color: #bbb;
     color: white;
+}
+
+.session {
+    font-size: 1.25em;
+    font-weight: 600;
 }

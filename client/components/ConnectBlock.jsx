@@ -83,7 +83,7 @@ export default class ConnectBlock extends PureComponent {
 
         return (
           <div>
-            <p>Connected to session: <strong>{id}</strong></p>
+            <p>Connected to session: <span className="session">{id}</span></p>
             <div className="button-container">
               <button onClick={this.disconnect}>Disconnect</button>
             </div>
