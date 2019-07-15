@@ -30,6 +30,8 @@ class Player {
     this.remotePlaying = false;
     this.remotePlayable = false;
 
+    this.pingInterval = null;
+
     this.changeHost();
 
     this.onVideoEvent = this.onVideoEvent.bind(this);
@@ -171,16 +173,18 @@ class Player {
       this.connection.close();
 
       this.connection = null;
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
     }
 
-    this.setState('disconnecting');
+    this.setState('disconnected');
 
     this.remoteContainer = '';
   }
 
   connect(id) {
     if (this.connection) {
-      console.log('Connection already exists! Disconnecting');
+      console.log('Connection already exists. Disconnecting');
 
       this.disconnect();
     }
@@ -193,6 +197,10 @@ class Player {
       this.setId(id);
       this.setState('connected');
 
+      this.pingInterval = setInterval(() => {
+        this.send({type: 'PING'});
+      }, 10000);
+
       this.sendInitialize();
 
       if (!this.remoteContainer) {
@@ -203,11 +211,12 @@ class Player {
     });
 
     this.connection.addEventListener('close', (e) => {
-      console.log('websocket close', e, e.code, e.reason);
-      this.setId('');
+      console.log('websocket close', e.code, e.reason);
 
       if (e.code === 4000) { // Session invalid
         this.setState('session_invalid');
+        this.setId('');
+        this.disconnect();
       } else {
         this.reconnect();
       }
@@ -230,6 +239,11 @@ class Player {
       const data = JSON.parse(message.data);
 
       switch (data.type) {
+        case 'PING':
+          this.send({type: 'PONG'});
+          break;
+        case 'PONG':
+          break;
         case 'ASK_INITIALIZE':
           this.sendInitialize();
           break;
