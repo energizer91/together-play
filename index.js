@@ -34,6 +34,12 @@ wss.on('connection', (ws, req) => {
 
   const connection = connections.get(session);
 
+  if (connection.destroyTimeout) {
+    console.log('Removing automatic session destroy timeout');
+    clearTimeout(connection.destroyTimeout);
+    connection.destroyTimeout = null;
+  }
+
   connection.users.add(ws);
 
   ws.on('close', (code, reason) => {
@@ -46,8 +52,12 @@ wss.on('connection', (ws, req) => {
     }
 
     if (connection.users.size === 0) {
-      connections.delete(session);
-      console.log('session', session, 'has been removed');
+      console.log('Setting session', session, '30 minutes remove timeout');
+
+      connection.destroyTimeout = setTimeout(() => {
+        connections.delete(session);
+        console.log('session', session, 'has been removed');
+      }, 30 * 60 * 1000);
     }
   });
 
@@ -97,6 +107,7 @@ app.post('/connection', (req, res) => {
 
   const connection = {
     id: hash,
+    destroyTimeout: null,
     users: new Set()
   };
 

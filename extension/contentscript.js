@@ -26,6 +26,7 @@ class Player {
     this.playing = false;
     this.playable = false;
 
+    this.remoteContainer = '';
     this.remotePlaying = false;
     this.remotePlayable = false;
 
@@ -49,8 +50,7 @@ class Player {
 
   changeHost(localhost = false) {
     if (this.connection) {
-      this.connection.close();
-      this.connection = null;
+      this.disconnect();
     }
 
     this.localhost = localhost;
@@ -133,36 +133,43 @@ class Player {
     this.connect(this.id);
   }
 
-  disconnect() {
-    console.log('websocket disconnect');
+  synchronize(data) {
+    this.remoteContainer = data.container;
+    this.remotePlaying = data.playing;
+    this.remotePlayable = data.playable;
 
-    if (this.connection) {
-      this.connection.close();
+    if (this.container) {
+      this.container.currentTime = data.time;
     }
-
-    this.setId('');
-
-    this.setState('disconnected');
   }
 
-  setId(id) {
-    this.id = id;
+  sendInitialize() {
+    this.send({
+      type: 'INITIALIZE',
+      container: this.container && this.container.currentSrc,
+      playing: this.playing,
+      playable: this.playable,
+      time: this.container.currentTime
+    });
+  }
 
-    if (!globalPort) {
-      return;
+  disconnect() {
+    if (this.connection) {
+      this.connection.close();
+
+      this.connection = null;
     }
 
-    globalPort.postMessage({
-      type: 'setId',
-      id
-    });
+    this.setState('disconnecting');
+
+    this.remoteContainer = '';
   }
 
   connect(id) {
     if (this.connection) {
-      console.log('Connection already exists!');
+      console.log('Connection already exists! Disconnecting');
 
-      this.connection.close();
+      this.disconnect();
     }
 
     this.setState('connecting');
@@ -172,6 +179,14 @@ class Player {
     this.connection.addEventListener('open', () => {
       this.setId(id);
       this.setState('connected');
+
+      this.sendInitialize();
+
+      if (!this.remoteContainer) {
+        this.send({
+          type: 'ASK_INITIALIZE'
+        });
+      }
     });
 
     this.connection.addEventListener('close', (e) => {
@@ -202,6 +217,13 @@ class Player {
       const data = JSON.parse(message.data);
 
       switch (data.type) {
+        case 'ASK_INITIALIZE':
+          this.sendInitialize();
+          break;
+        case 'INITIALIZE':
+          console.log('synchronize players', data);
+          this.synchronize(data);
+          break;
         case 'CONTAINER':
           console.log('Remote container', data.container);
           break;
