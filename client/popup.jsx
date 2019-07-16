@@ -154,7 +154,9 @@ class Popup extends Component {
       return (
         <div>
           <p>No container attached</p>
-          <button onClick={this.findContainer}>change container</button>
+          <div className="button-container" style={{marginBottom: 10}}>
+            <button onClick={this.findContainer}>change container</button>
+          </div>
         </div>
       )
     }
@@ -216,7 +218,9 @@ class Popup extends Component {
       <div>
         <div className="statusbar">
           <p className="statusbar__status">{state}</p>
-          <p className="statusbar__settings" onClick={this.openSettings}><img src="images/settings.png" alt="settings"/></p>
+          <p className="statusbar__settings" onClick={this.openSettings}>
+            <img src="images/settings.png" alt="settings"/>
+          </p>
         </div>
         {this.renderStage()}
       </div>

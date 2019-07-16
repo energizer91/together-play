@@ -1,16 +1,18 @@
 'use strict';
 
-function getVideoContainers(d = document) {
-  if (!d) {
-    return [];
-  }
-
-  return Array.from(d.querySelectorAll('video'));
+function getVideoContainers() {
+  return Array.from(document.querySelectorAll('video'));
 }
 
-let globalPort = null;
 let containers = [];
 let containerIndex = 0;
+
+function setIcon(connected = false) {
+  chrome.runtime.sendMessage({
+    action: 'updateIcon',
+    connected
+  });
+}
 
 class Player {
   constructor() {
@@ -22,6 +24,7 @@ class Player {
     this.container = null;
     this.connection = null;
     this.retries = 0;
+    this.port = null;
 
     this.playing = false;
     this.playable = false;
@@ -37,16 +40,20 @@ class Player {
     this.onVideoEvent = this.onVideoEvent.bind(this);
   }
 
+  setPort(port) {
+    this.port = port;
+  }
+
   setState(state) {
     this.state = state;
 
-    if (!globalPort) {
+    if (!this.port) {
       return;
     }
 
-    globalPort.postMessage({
+    this.port.postMessage({
       type: 'state',
-      state: state
+      state
     });
   }
 
@@ -126,9 +133,9 @@ class Player {
 
   reconnect() {
     this.retries++;
+    setIcon(false);
 
     if (this.retries > 5) {
-      // setTimeout(() => this.connect(this.id));
       throw new Error('Too many retries');
     }
 
@@ -158,20 +165,13 @@ class Player {
   setId(id) {
     this.id = id;
 
-    if (!globalPort) {
+    if (!this.port) {
       return;
     }
 
-    globalPort.postMessage({
+    this.port.postMessage({
       type: 'setId',
       id
-    });
-  }
-
-  setIcon(connected = false) {
-    chrome.runtime.sendMessage({
-      action: 'updateIcon',
-      connected
     });
   }
 
@@ -186,7 +186,7 @@ class Player {
 
     this.setState('disconnected');
 
-    this.setIcon(false);
+    setIcon(false);
 
     this.remoteContainer = '';
   }
@@ -205,7 +205,7 @@ class Player {
     this.connection.addEventListener('open', () => {
       this.setId(id);
       this.setState('connected');
-      this.setIcon(true);
+      setIcon(true);
 
       this.pingInterval = setInterval(() => {
         this.send({type: 'PING'});
@@ -406,15 +406,18 @@ function createPlayer(index) {
 }
 
 chrome.runtime.onConnect.addListener(function (port) {
-  globalPort = port;
+  if (player) {
+    player.setPort(port);
+  }
 
   port.onDisconnect.addListener(function () {
-    globalPort = null;
+    if (player) {
+      player.setPort(null);
+    }
   });
 
   port.onMessage.addListener(message => {
     if (message.type === 'findContainer') {
-      console.log('finding new container');
       initialize();
 
       return;
@@ -425,7 +428,6 @@ chrome.runtime.onConnect.addListener(function (port) {
         return;
       }
 
-      console.log('picking container', containers[message.index]);
       containers[message.index].classList.remove('together-play__preselected');
       createPlayer(message.index);
 

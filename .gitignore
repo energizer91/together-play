@@ -92,3 +92,4 @@ typings/
 .dynamodb/
 
 extension/popup
+extension/*.zip
