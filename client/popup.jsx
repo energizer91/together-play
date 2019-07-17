@@ -122,7 +122,7 @@ class Popup extends Component {
 
     if (!portConnected) {
       return (
-        <div>Connecting to port...</div>
+        <div className="main">Connecting to port...</div>
       );
     }
 
