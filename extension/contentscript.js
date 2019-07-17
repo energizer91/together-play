@@ -4,6 +4,10 @@ function getVideoContainers() {
   return Array.from(document.querySelectorAll('video'));
 }
 
+function getContainername(container) {
+  return container && (container.currentSrc || container.className);
+}
+
 let containers = [];
 let containerIndex = 0;
 
@@ -125,7 +129,7 @@ class Player {
 
     this.send({
       type: 'CONTAINER',
-      container: this.container && this.container.currentSrc
+      container: getContainername(this.container)
     });
 
     this.setState('ready');
@@ -155,7 +159,7 @@ class Player {
   sendInitialize() {
     this.send({
       type: 'INITIALIZE',
-      container: this.container && this.container.currentSrc,
+      container: getContainername(this.container),
       playing: this.playing,
       playable: this.playable,
       time: this.container.currentTime
@@ -442,11 +446,13 @@ chrome.runtime.onConnect.addListener(function (port) {
 
     switch (message.type) {
       case 'get_containers':
+        containers = getVideoContainers();
+
         port.postMessage({
           type: 'containers',
           containers: containers.map(container => ({
             frame: location.href,
-            container: container.currentSrc
+            container: getContainername(container)
           }))
         });
         break;
