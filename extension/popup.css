@@ -1,8 +1,12 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #FBFBFB;
+    margin: 0;
+}
+
 #root {
-    padding: 10px;
     box-sizing: border-box;
     width: 300px;
-    font-family: Helvetica, sans-serif;
     color: #555;
     font-size: 14px;
 }
@@ -22,16 +26,18 @@ input[type=text] {
     margin-bottom: 10px;
 }
 
-button {
+.button {
+    border: none;
     display: inline-block;
-    background-color: transparent;
-    border-radius: 4px;
     text-align: center;
+    color: white;
     font-size: 10px;
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
-    border: 1px solid #bbb;
+    background-color: #4476FF;
+    box-shadow: 0 5px 15px rgba(68, 118, 255, 0.45);
+    border-radius: 5px;
     height: 38px;
     line-height: 38px;
     padding: 0 20px;
@@ -39,6 +45,20 @@ button {
     text-transform: uppercase;
     white-space: nowrap;
     box-sizing: border-box;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #1A53F0;
+}
+
+.button_cancel {
+    background-color: #FF4468;
+    box-shadow: 0 5px 15px rgba(255, 68, 104, 0.51);
+}
+
+.button_cancel:hover {
+    background-color: #DD3A5E;
 }
 
 .button-container {
@@ -51,15 +71,20 @@ button {
     margin: 0 5px;
 }
 
+.main {
+    box-sizing: border-box;
+    padding: 15px 12px 25px;
+}
+
 .statusbar {
+    padding: 13px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    margin-bottom: 10px;
-}
-
-.statusbar p {
-    margin: 0 0 10px 0;
+    align-items: center;
+    height: 40px;
+    border-bottom: 1px solid #F0F0F0;
 }
 
 .statusbar__settings {
@@ -67,8 +92,8 @@ button {
     cursor: pointer;
 }
 
-.statusbar__settings img {
-    height: 100%;
+.statusbar__status {
+    margin: 0;
 }
 
 .video-caption {
@@ -95,6 +120,8 @@ button {
 }
 
 .session {
-    font-size: 1.25em;
+    font-size: 16px;
     font-weight: 600;
+    text-align: center;
+    margin: 5px 0 20px;
 }

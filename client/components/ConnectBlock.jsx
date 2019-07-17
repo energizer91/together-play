@@ -1,6 +1,9 @@
 import React, {PureComponent} from 'react';
+import {connect} from 'react-redux';
 
-export default class ConnectBlock extends PureComponent {
+import {portSendMessage as sendMessage, setStatus} from '../redux/actions';
+
+class ConnectBlock extends PureComponent {
   state = {
     stage: 'start',
     friendId: ''
@@ -19,31 +22,31 @@ export default class ConnectBlock extends PureComponent {
   }
 
   disconnect = () => {
-    const {onSendMessage} = this.props;
+    const {sendMessage} = this.props;
 
     this.setState({stage: 'start'});
 
-    onSendMessage({type: 'disconnect'});
+    sendMessage({type: 'disconnect'});
   };
 
   getId = () => {
-    const {onSendMessage} = this.props;
+    const {sendMessage} = this.props;
 
     this.setState({stage: 'loading'});
 
-    onSendMessage({type: 'getId'});
+    sendMessage({type: 'getId'});
   };
 
   connect = () => {
-    const {onSetStatus, onSendMessage} = this.props;
+    const {setStatus, sendMessage} = this.props;
     const {friendId} = this.state;
 
     if (!friendId) {
-      onSetStatus('Please set valid id!');
+      setStatus('Please set valid id!');
       return;
     }
 
-    onSendMessage({type: 'connect', id: friendId});
+    sendMessage({type: 'connect', id: friendId});
   };
 
   join = () => {
@@ -66,8 +69,8 @@ export default class ConnectBlock extends PureComponent {
       case 'start':
         return (
           <div className="button-container">
-            <button onClick={this.getId}>Create room</button>
-            <button onClick={this.join}>Join room</button>
+            <button className="button" onClick={this.getId}>Create room</button>
+            <button className="button" onClick={this.join}>Join room</button>
           </div>
         );
       case 'loading':
@@ -83,9 +86,9 @@ export default class ConnectBlock extends PureComponent {
 
         return (
           <div>
-            <p>Connected to session: <span className="session">{id}</span></p>
+            <p className="session">{id}</p>
             <div className="button-container">
-              <button onClick={this.disconnect}>Disconnect</button>
+              <button className="button button_cancel" onClick={this.disconnect}>Disconnect</button>
             </div>
           </div>
         );
@@ -96,8 +99,8 @@ export default class ConnectBlock extends PureComponent {
               <input placeholder="Friend id" type="text" value={friendId} onChange={this.changeFriendId} />
             </div>
             <div className="button-container">
-              <button onClick={this.connect} disabled={!friendId}>Connect</button>
-              <button onClick={this.reset}>Back</button>
+              <button className="button" onClick={this.connect} disabled={!friendId}>Connect</button>
+              <button className="button button_cancel" onClick={this.reset}>Back</button>
             </div>
           </div>
         )
@@ -112,3 +115,14 @@ export default class ConnectBlock extends PureComponent {
     )
   }
 }
+
+const mapStateToProps = state => ({
+  id: state.id
+});
+
+const mapDispatchToProps = {
+  sendMessage,
+  setStatus
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(ConnectBlock);

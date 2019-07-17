@@ -1,119 +1,39 @@
 import React, {Component} from 'react';
+import {connect} from 'react-redux';
+import {portSendMessage as sendMessage, setContainer} from './redux/actions';
 
 import ConnectBlock from './components/ConnectBlock.jsx';
+import StatusBar from './components/StatusBar.jsx';
 
 class Popup extends Component {
   state = {
-    port: null,
-    id: '',
-    state: 'idle',
-    container: '',
-    localhost: false,
-    containers: [],
-    stage: 'start',
-    connected: false
+    stage: 'start'
   };
-
-  componentDidMount() {
-    this.connectPort();
-  }
-
-  connectPort() {
-    chrome.tabs.query({active: true, currentWindow: true}, tabs => {
-      const port = chrome.tabs.connect(tabs[0].id);
-
-      this.setState({port});
-
-      port.postMessage({type: 'status'});
-
-      port.onMessage.addListener(message => {
-        switch (message.type) {
-          case 'containers':
-            this.setState({containers: message.containers});
-            break;
-          case 'setId':
-            this.setId(message.id);
-
-            if (message.id && message.connect) {
-              port.postMessage({type: 'connect', id: message.id});
-            }
-            break;
-          case 'status':
-            this.synchronizeStatus(message.status);
-            break;
-          case 'state':
-            this.setStatus(message.state);
-            break;
-          default:
-            console.log('unknown message', message);
-        }
-      });
-    });
-  }
-
-  changeLocalhost = e => {
-    this.setState({
-      localhost: e.target.checked
-    });
-  };
-
-  setStatus(state) {
-    this.setState({
-      state
-    });
-  }
-
-  setId(id) {
-    this.setState({
-      id
-    });
-  }
-
-  setStage(stage) {
-    this.setState({
-      stage
-    });
-  }
-
-  synchronizeStatus(status) {
-    console.log('Synchronizing status', status);
-
-    if (!status) {
-      return;
-    }
-
-    this.setState({
-      id: status.id,
-      container: status.container,
-      state: status.state,
-      localhost: status.localhost
-    });
-  }
 
   play = () => {
-    this.state.port.postMessage({type: 'play'});
+    this.props.sendMessage({type: 'play'});
   };
 
   pause = () => {
-    this.state.port.postMessage({type: 'pause'});
+    this.props.sendMessage({type: 'pause'});
   };
 
   findContainer = () => {
-    this.state.port.postMessage({type: 'get_containers'});
+    this.props.sendMessage({type: 'get_containers'});
   };
 
   selectContainer(index, frame) {
-    this.state.port.postMessage({type: 'select_container', index, frame});
+    this.props.sendMessage({type: 'select_container', index, frame});
   }
 
   deselectContainer(index, frame) {
-    this.state.port.postMessage({type: 'deselect_container', index, frame});
+    this.props.sendMessage({type: 'deselect_container', index, frame});
   }
 
   pickContainer(index, frame) {
-    this.state.port.postMessage({type: 'pick_container', index, frame});
+    this.props.sendMessage({type: 'pick_container', index, frame});
 
-    this.setState({containers: [], container: this.state.containers[index].container});
+    this.props.setContainer(index);
   }
 
   openSettings = () => {
@@ -129,7 +49,7 @@ class Popup extends Component {
   };
 
   renderContainer() {
-    const {container, containers} = this.state;
+    const {container, containers} = this.props;
 
     if (containers.length) {
       console.log('selecting containers', containers);
@@ -155,7 +75,7 @@ class Popup extends Component {
         <div>
           <p>No container attached</p>
           <div className="button-container" style={{marginBottom: 10}}>
-            <button onClick={this.findContainer}>change container</button>
+            <button className="button" onClick={this.findContainer}>change container</button>
           </div>
         </div>
       )
@@ -164,41 +84,33 @@ class Popup extends Component {
     return (
       <div>
         <div className="button-container">
-          <button onClick={this.play}>play</button>
-          <button onClick={this.pause}>pause</button>
+          <button className="button" onClick={this.play}>play</button>
+          <button className="button" onClick={this.pause}>pause</button>
         </div>
         <p className="video-caption">{container}</p>
         <div className="button-container" style={{marginBottom: 10}}>
-          <button onClick={this.findContainer}>change container</button>
+          <button className="button" onClick={this.findContainer}>change container</button>
         </div>
       </div>
     )
   }
 
   renderStage() {
-    const {stage, id} = this.state;
+    const {stage} = this.state;
 
     switch (stage) {
-      case 'loading':
-        return (
-          <div>loading</div>
-        );
       case 'start':
         return (
-          <div>
-            <ConnectBlock
-              id={id}
-              onSetStatus={status => this.setStatus(status)}
-              onSendMessage={message => this.state.port.postMessage(message)}
-            />
+          <div className="main">
+            <ConnectBlock />
           </div>
         );
       case 'settings':
         return (
-          <div>
+          <div className="main">
             {this.renderContainer()}
             <div className="button-container">
-              <button onClick={this.reset}>Back</button>
+              <button className="button" onClick={this.reset}>Back</button>
             </div>
           </div>
         );
@@ -206,9 +118,9 @@ class Popup extends Component {
   }
 
   render() {
-    const {state, port} = this.state;
+    const {portConnected} = this.props;
 
-    if (!port) {
+    if (!portConnected) {
       return (
         <div>Connecting to port...</div>
       );
@@ -216,16 +128,23 @@ class Popup extends Component {
 
     return (
       <div>
-        <div className="statusbar">
-          <p className="statusbar__status">{state}</p>
-          <p className="statusbar__settings" onClick={this.openSettings}>
-            <img src="images/settings.png" alt="settings"/>
-          </p>
-        </div>
+        <StatusBar onOpenSettings={this.openSettings} />
         {this.renderStage()}
       </div>
     );
   }
 }
 
-export default Popup;
+const mapStateToProps = state => ({
+  portConnected: state.portConnected,
+  containers: state.containers,
+  container: state.container,
+  id: state.id
+});
+
+const mapDispatchToProps = {
+  setContainer,
+  sendMessage
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Popup);
