@@ -36,9 +36,9 @@ export const setContainers = containers => ({
   containers
 });
 
-export const setContainer = container => ({
+export const setContainer = index => ({
   type: constants.SET_CONTAINER,
-  container
+  index
 });
 
 export const setConnected = connected => ({

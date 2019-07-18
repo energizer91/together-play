@@ -29,7 +29,7 @@ export default (state = initialState, action) => {
       });
     case constants.SET_CONTAINER:
       return Object.assign({}, state, {
-        container: state.containers[action.index],
+        container: state.containers[action.index] ? state.containers[action.index].container : '',
         containers: []
       });
     case constants.SET_CONTAINERS:

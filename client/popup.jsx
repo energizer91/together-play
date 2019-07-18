@@ -52,7 +52,6 @@ class Popup extends Component {
     const {container, containers} = this.props;
 
     if (containers.length) {
-      console.log('selecting containers', containers);
       return (
         <ul className="container-select">
           {containers.map((c, i) => (
