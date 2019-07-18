@@ -380,12 +380,17 @@ function initialize() {
 
   if (containers.length) {
     console.log('Found ' + containers.length + ' video tag(s) available for together playback');
-    createPlayer(containerIndex);
+    player = new Player();
+
+    changeContainer(containerIndex);
   }
 }
 
-function createPlayer(index) {
-  player = new Player();
+function changeContainer(index) {
+  if (!player) {
+    return;
+  }
+
   player.setContainer(containers[index]);
 }
 
@@ -404,19 +409,19 @@ chrome.runtime.onConnect.addListener(port => {
   });
 
   port.onMessage.addListener(message => {
-    if (message.type === 'findContainer') {
-      initialize();
-
-      return;
-    }
-
     if (message.type === 'pick_container') {
       if (message.frame !== location.href) {
         return;
       }
 
       containers[message.index].classList.remove('together-play__preselected');
-      createPlayer(message.index);
+
+      if (!player) {
+        player = new Player();
+      }
+
+
+      changeContainer(message.index);
 
       return;
     }
