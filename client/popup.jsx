@@ -101,7 +101,7 @@ class Popup extends Component {
       case 'start':
         return (
           <div className="main">
-            <ConnectBlock />
+            <ConnectBlock/>
           </div>
         );
       case 'settings':
@@ -127,7 +127,7 @@ class Popup extends Component {
 
     return (
       <div>
-        <StatusBar onOpenSettings={this.openSettings} />
+        <StatusBar onOpenSettings={this.openSettings}/>
         {this.renderStage()}
       </div>
     );

@@ -420,7 +420,6 @@ chrome.runtime.onConnect.addListener(port => {
         player = new Player();
       }
 
-
       changeContainer(message.index);
 
       return;

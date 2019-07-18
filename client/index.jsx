@@ -14,8 +14,8 @@ window.store = store;
 
 const Index = () => (
   <Provider store={store}>
-    <Popup />
+    <Popup/>
   </Provider>
 );
 
-render(<Index />, document.getElementById('root'));
+render(<Index/>, document.getElementById('root'));

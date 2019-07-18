@@ -104,7 +104,7 @@ class ConnectBlock extends PureComponent {
         return (
           <div>
             <div>
-              <input placeholder="Friend id" type="text" value={friendId} onChange={this.changeFriendId} />
+              <input placeholder="Friend id" type="text" value={friendId} onChange={this.changeFriendId}/>
             </div>
             <div className="button-container">
               <button className="button" onClick={this.connect} disabled={!friendId}>Connect</button>
