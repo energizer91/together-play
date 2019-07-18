@@ -4,7 +4,7 @@ function getVideoContainers() {
   return Array.from(document.querySelectorAll('video'));
 }
 
-function getContainername(container) {
+function getContainerName(container) {
   return container && (container.currentSrc || container.className);
 }
 
@@ -21,14 +21,14 @@ function setIcon(connected = false) {
 class Player {
   constructor() {
     this.localhost = false;
-    this.state = 'idle';
+    this.state = 'initialize';
     this.id = '';
-    this.websocketUrl = '';
-    this.serverUrl = '';
+    this.websocketUrl = 'wss://together-play.herokuapp.com';
+    this.serverUrl = 'https://together-play.herokuapp.com';
     this.container = null;
     this.connection = null;
     this.retries = 0;
-    this.port = null;
+    this.connected = false;
 
     this.playing = false;
     this.playable = false;
@@ -39,56 +39,25 @@ class Player {
 
     this.pingInterval = null;
 
-    this.changeHost();
+    // callbacks
+    this.onconnect = null;
+    this.ondisconnect = null;
+    this.onchangeId = null;
+    this.onchangeState = null;
 
     this.onVideoEvent = this.onVideoEvent.bind(this);
   }
 
-  setPort(port) {
-    this.port = port;
-  }
-
-  setState(state) {
-    this.state = state;
-
-    if (!this.port) {
-      return;
-    }
-
-    this.port.postMessage({
-      type: 'state',
-      state
-    });
-  }
-
-  changeHost(localhost = false) {
-    if (this.connection) {
-      this.disconnect();
-    }
-
-    this.localhost = localhost;
-
-    if (this.localhost) {
-      this.websocketUrl = 'ws://localhost:3000';
-      this.serverUrl = 'http://localhost:3000';
-    } else {
-      this.websocketUrl = 'wss://together-play.herokuapp.com';
-      this.serverUrl = 'https://together-play.herokuapp.com';
-    }
-  }
-
   getUniqueId() {
-    this.setState('get_unique_id');
     return fetch(this.serverUrl + '/connection', {method: 'POST'})
       .then(response => response.text())
       .then(hash => {
-        this.setState('get_unique_id_successful');
         this.id = hash;
         return hash;
       })
       .catch(error => {
         console.error('Getting unique id failed', error);
-        this.setState('get_unique_id_failed');
+        this.setState('error');
       })
   }
 
@@ -97,10 +66,6 @@ class Player {
   }
 
   removeContainer() {
-    console.log('Removing container', this.container);
-
-    this.setState('remove_container');
-
     this.container.removeEventListener('play', this.onVideoEvent);
     this.container.removeEventListener('playing', this.onVideoEvent);
     this.container.removeEventListener('pause', this.onVideoEvent);
@@ -115,9 +80,6 @@ class Player {
       this.removeContainer();
     }
 
-    console.log('Setting video container as', container);
-
-    this.setState('set_container');
     this.container = container;
 
     this.container.addEventListener('play', this.onVideoEvent);
@@ -129,7 +91,7 @@ class Player {
 
     this.send({
       type: 'CONTAINER',
-      container: getContainername(this.container)
+      container: getContainerName(this.container)
     });
 
     this.setState('ready');
@@ -159,24 +121,50 @@ class Player {
   sendInitialize() {
     this.send({
       type: 'INITIALIZE',
-      container: getContainername(this.container),
+      container: getContainerName(this.container),
       playing: this.playing,
       playable: this.playable,
       time: this.container.currentTime
     });
   }
 
+  setState(state) {
+    this.state = state;
+
+    if (this.onchangeState && typeof this.onchangeState === 'function') {
+      this.onchangeState(state);
+    }
+  }
+
   setId(id) {
     this.id = id;
 
-    if (!this.port) {
-      return;
+    if (this.onchangeId && typeof this.onchangeId === 'function') {
+      this.onchangeId(id);
     }
+  }
 
-    this.port.postMessage({
-      type: 'setId',
-      id
-    });
+  setConnected() {
+    this.connected = true;
+
+    if (this.onconnect && typeof this.onconnect === 'function') {
+      this.onconnect();
+    }
+  }
+
+  setDisconnected() {
+    this.connected = false;
+
+    if (this.ondisconnect && typeof this.ondisconnect === 'function') {
+      this.ondisconnect();
+    }
+  }
+
+  resetEvents() {
+    this.onchangeId = null;
+    this.onchangeState = null;
+    this.onconnect = null;
+    this.ondisconnect = null;
   }
 
   disconnect() {
@@ -186,6 +174,7 @@ class Player {
       this.connection = null;
       clearInterval(this.pingInterval);
       this.pingInterval = null;
+      this.setDisconnected();
     }
 
     this.setState('disconnected');
@@ -209,6 +198,7 @@ class Player {
     this.connection.addEventListener('open', () => {
       this.setId(id);
       this.setState('connected');
+      this.setConnected();
       setIcon(true);
 
       this.pingInterval = setInterval(() => {
@@ -228,7 +218,6 @@ class Player {
       console.log('websocket close', e.code, e.reason);
 
       if (e.code === 4000) { // Session invalid
-        this.setState('session_invalid');
         this.setId('');
         this.disconnect();
       } else if (e.code === 1006) {
@@ -240,7 +229,8 @@ class Player {
     this.connection.addEventListener('error', error => {
       this.setId('');
       console.log('websocket error', error);
-      this.setState('connection error');
+      this.setState('error');
+      this.setDisconnected();
 
       this.reconnect();
     });
@@ -409,14 +399,17 @@ function createPlayer(index) {
   player.setContainer(containers[index]);
 }
 
-chrome.runtime.onConnect.addListener(function (port) {
+chrome.runtime.onConnect.addListener(port => {
   if (player) {
-    player.setPort(port);
+    player.onconnect = () => port.postMessage({type: 'connected', connected: true});
+    player.ondisconnect = () => port.postMessage({type: 'connected', connected: false});
+    player.onchangeId = id => port.postMessage({type: 'setId', id});
+    player.onchangeState = state => port.postMessage({type: 'state', state});
   }
 
-  port.onDisconnect.addListener(function () {
+  port.onDisconnect.addListener(() => {
     if (player) {
-      player.setPort(null);
+      player.resetEvents();
     }
   });
 
@@ -452,7 +445,7 @@ chrome.runtime.onConnect.addListener(function (port) {
           type: 'containers',
           containers: containers.map(container => ({
             frame: location.href,
-            container: getContainername(container)
+            container: getContainerName(container)
           }))
         });
         break;
@@ -497,13 +490,11 @@ chrome.runtime.onConnect.addListener(function (port) {
           status: {
             state: player.state,
             container: player.container && player.container.currentSrc,
+            connected: player.connected,
             id: player.id,
             localhost: player.localhost
           }
         });
-        break;
-      case 'change_host':
-        player.changeHost(message.localhost);
         break;
       default:
         console.log('shef vse slomalos', message);

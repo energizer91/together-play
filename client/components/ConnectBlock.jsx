@@ -10,14 +10,18 @@ class ConnectBlock extends PureComponent {
   };
 
   componentDidMount() {
-    if (this.props.id) {
+    if (this.props.connected && this.props.id) {
       this.setState({stage: 'connected'});
     }
   }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
-    if (prevProps.id !== this.props.id && this.props.id) {
-      this.setState({stage: 'connected'});
+    if (prevProps.connected !== this.props.connected) {
+      if (this.props.connected) {
+        this.setState({stage: 'connected'});
+      } else {
+        this.setState({stage: 'start'});
+      }
     }
   }
 
@@ -75,12 +79,16 @@ class ConnectBlock extends PureComponent {
         );
       case 'loading':
         return (
-          <div>loading</div>
+          <div>
+            <p className="session">Loading</p>
+          </div>
         );
       case 'connected':
         if (!id) {
           return (
-            <div>no id found</div>
+            <div>
+              <p className="session">No id found</p>
+            </div>
           );
         }
 
@@ -117,7 +125,8 @@ class ConnectBlock extends PureComponent {
 }
 
 const mapStateToProps = state => ({
-  id: state.id
+  id: state.id,
+  connected: state.connected
 });
 
 const mapDispatchToProps = {

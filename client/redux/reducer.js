@@ -4,6 +4,7 @@ const initialState = {
   id: '',
   container: '',
   containers: [],
+  connected: false,
   state: '',
   portConnected: false
 };
@@ -35,11 +36,16 @@ export default (state = initialState, action) => {
       return Object.assign({}, state, {
         containers: action.containers
       });
+    case constants.SET_CONNECTED:
+      return Object.assign({}, state, {
+        connected: action.connected
+      });
     case constants.SYNCHRONIZE_STATUS:
       return Object.assign({}, state, {
         id: action.status.id,
         container: action.status.container,
-        state: action.status.state
+        state: action.status.state,
+        connected: action.status.connected
       });
     default:
       return state;

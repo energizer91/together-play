@@ -33,6 +33,9 @@ const portMiddleware = store => {
         case 'state':
           store.dispatch(actions.setStatus(message.state));
           break;
+        case 'connected':
+          store.dispatch(actions.setConnected(message.connected));
+          break;
         default:
           console.log('unknown message', message);
       }

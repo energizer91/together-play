@@ -41,6 +41,11 @@ export const setContainer = container => ({
   container
 });
 
+export const setConnected = connected => ({
+  type: constants.SET_CONNECTED,
+  connected
+});
+
 export const synchronizeStatus = status => ({
   type: constants.SYNCHRONIZE_STATUS,
   status
