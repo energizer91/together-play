@@ -1,13 +1,16 @@
 import React, {PureComponent} from 'react';
 import {connect} from 'react-redux';
+import {CopyToClipboard} from 'react-copy-to-clipboard';
 
 import {portSendMessage as sendMessage, setStatus} from '../redux/actions';
 
 class ConnectBlock extends PureComponent {
   state = {
     stage: 'start',
-    friendId: ''
+    friendId: '',
+    copied: false
   };
+  copyTimeout = null;
 
   componentDidMount() {
     if (this.props.connected && this.props.id) {
@@ -22,6 +25,13 @@ class ConnectBlock extends PureComponent {
       } else {
         this.setState({stage: 'start'});
       }
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.copyTimeout) {
+      clearTimeout(this.copyTimeout);
+      this.copyTimeout = null;
     }
   }
 
@@ -65,9 +75,17 @@ class ConnectBlock extends PureComponent {
     this.setState({friendId: e.target.value});
   };
 
+  copy = () => {
+    this.setState({
+      copied: true
+    });
+
+    this.copyTimeout = setTimeout(() => this.setState({copied: false}), 3000);
+  };
+
   renderStage() {
     const {id} = this.props;
-    const {stage, friendId} = this.state;
+    const {stage, friendId, copied} = this.state;
 
     switch (stage) {
       case 'start':
@@ -94,7 +112,19 @@ class ConnectBlock extends PureComponent {
 
         return (
           <div>
-            <p className="session">{id}</p>
+            <p className="session">
+              <span>{id}</span>
+              <CopyToClipboard
+                text={id}
+                onCopy={this.copy}
+              >
+                <img
+                  src={copied ? 'images/icon-copy-complete.png' : 'images/icon-copy.png'}
+                  alt="Copy"
+                  className="copy-button"
+                />
+              </CopyToClipboard>
+            </p>
             <div className="button-container">
               <button className="button button_cancel" onClick={this.disconnect}>Disconnect</button>
             </div>

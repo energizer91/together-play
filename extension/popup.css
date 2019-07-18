@@ -131,3 +131,14 @@ input[type=text] {
     text-align: center;
     margin: 5px 0 20px;
 }
+
+.session span {
+    vertical-align: middle;
+}
+
+.copy-button {
+    height: 16px;
+    vertical-align: middle;
+    margin-left: 10px;
+    cursor: pointer;
+}
