@@ -89,11 +89,6 @@ class Player {
     this.container.addEventListener('canplaythrough', this.onVideoEvent);
     this.container.addEventListener('seeked', this.onVideoEvent);
 
-    this.send({
-      type: 'CONTAINER',
-      container: getContainerName(this.container)
-    });
-
     this.setState('ready');
   }
 
@@ -252,11 +247,7 @@ class Player {
           this.sendInitialize();
           break;
         case 'INITIALIZE':
-          console.log('synchronize players', data);
           this.synchronize(data);
-          break;
-        case 'CONTAINER':
-          console.log('Remote container', data.container);
           break;
         case 'PLAYING':
           this.setRemotePlaying(data.state, data.silent, data.time);
@@ -387,9 +378,8 @@ function initialize() {
   containers = getVideoContainers();
   containerIndex = containers.length - 1;
 
-  console.log(containers.length + ' video tag(s) available for together playback');
-
   if (containers.length) {
+    console.log('Found ' + containers.length + ' video tag(s) available for together playback');
     createPlayer(containerIndex);
   }
 }
@@ -435,8 +425,6 @@ chrome.runtime.onConnect.addListener(port => {
       return;
     }
 
-    console.log('Incoming message', message);
-
     switch (message.type) {
       case 'get_containers':
         containers = getVideoContainers();
@@ -465,11 +453,7 @@ chrome.runtime.onConnect.addListener(port => {
         break;
       case 'getId':
         player.getUniqueId()
-          .then(id => {
-            console.log('Responding with id', id);
-
-            port.postMessage({type: 'setId', id, connect: !player.connection});
-          });
+          .then(id => port.postMessage({type: 'setId', id, connect: !player.connection}));
         break;
       case 'connect':
         player.retries = 0;
