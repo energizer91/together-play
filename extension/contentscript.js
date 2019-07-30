@@ -61,6 +61,26 @@ class Player {
       })
   }
 
+  restoreConnection() {
+    chrome.storage.local.get(['id'], result => {
+      if (result.id) {
+        fetch(this.serverUrl + '/connection/' + result.id)
+          .then(response => response.text())
+          .then(response => {
+            if (response === 'ok') {
+              console.log('Session restore successful');
+
+              this.connect(result.id);
+            }
+          })
+          .catch(error => {
+            console.error('Getting unique id failed', error);
+            this.setState('error');
+          })
+      }
+    });
+  }
+
   onVideoEvent(e) {
     this.setStatus(e.type);
   }
@@ -142,6 +162,8 @@ class Player {
   setConnected() {
     this.connected = true;
 
+    chrome.storage.local.set({id: this.id});
+
     if (this.onconnect && typeof this.onconnect === 'function') {
       this.onconnect();
     }
@@ -149,6 +171,8 @@ class Player {
 
   setDisconnected() {
     this.connected = false;
+
+    chrome.storage.local.remove(['id']);
 
     if (this.ondisconnect && typeof this.ondisconnect === 'function') {
       this.ondisconnect();
@@ -382,6 +406,7 @@ function initialize() {
     console.log('Found ' + containers.length + ' video tag(s) available for together playback');
     player = new Player();
 
+    player.restoreConnection();
     changeContainer(containerIndex);
   }
 }

@@ -11,6 +11,10 @@ body {
     font-size: 14px;
 }
 
+p {
+    text-align: center;
+}
+
 input[type=text] {
     appearance: none;
     border: 1px solid #E9E9E9;

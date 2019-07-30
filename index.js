@@ -76,6 +76,12 @@ wss.on('connection', (ws, req) => {
 
     const connection = connections.get(session);
 
+    if (!connection) {
+      console.log('Connection not found', session);
+
+      return;
+    }
+
     for (let user of connection.users) {
       if (user !== ws) {
         user.send(message);

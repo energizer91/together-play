@@ -6,11 +6,20 @@ const initialState = {
   containers: [],
   connected: false,
   state: '',
-  portConnected: false
+  portConnected: false,
+  stage: 'start'
 };
 
 export default (state = initialState, action) => {
   switch (action.type) {
+    case constants.SET_STAGE:
+      return Object.assign({}, state, {
+        stage: action.stage
+      });
+    case constants.TOGGLE_SETTINGS:
+      return Object.assign({}, state, {
+        stage: state.stage === 'settings' ? 'start' : 'settings'
+      });
     case constants.PORT_CONNECTED:
       return Object.assign({}, state, {
         portConnected: true

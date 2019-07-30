@@ -13,6 +13,15 @@ export const portSendMessage = (message) => ({
   message
 });
 
+export const setStage = stage => ({
+  type: constants.SET_STAGE,
+  stage
+});
+
+export const toggleSettings = () => ({
+  type: constants.TOGGLE_SETTINGS
+});
+
 export const connectPort = () => ({
   type: constants.PORT_CONNECT
 });
