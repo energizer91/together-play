@@ -3,7 +3,13 @@ import {connect} from 'react-redux';
 import {toggleSettings} from '../redux/actions';
 import ConnectBlock from '../components/ConnectBlock.jsx';
 
-const Main = ({portConnected, container, toggleSettings}) => {
+const Main = ({portConnected, scriptInjected, container, toggleSettings}) => {
+  if (!scriptInjected) {
+    return (
+      <p>Injecting script...</p>
+    );
+  }
+
   if (!portConnected) {
     return (
       <p>Connecting to port...</p>
@@ -26,6 +32,7 @@ const Main = ({portConnected, container, toggleSettings}) => {
 
 const mapStateToProps = state => ({
   portConnected: state.portConnected,
+  scriptInjected: state.scriptInjected,
   container: state.container
 });
 

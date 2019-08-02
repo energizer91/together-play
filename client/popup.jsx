@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
-import {setStage} from './redux/actions';
+import {setStage, injectScript, connectPort} from './redux/actions';
 
 import Main from './views/Main.jsx';
 import Settings from './views/Settings.jsx';
@@ -11,6 +11,16 @@ class Popup extends Component {
   reset = () => {
     this.props.setStage('start');
   };
+
+  componentDidMount() {
+    this.props.injectScript();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.scriptInjected !== this.props.scriptInjected && this.props.scriptInjected) {
+      this.props.connectPort();
+    }
+  }
 
   renderStage() {
     const {stage} = this.props;
@@ -45,11 +55,15 @@ class Popup extends Component {
 }
 
 const mapStateToProps = state => ({
-  stage: state.stage
+  stage: state.stage,
+  scriptInjected: state.scriptInjected,
+  portConnected: state.portConnected
 });
 
 const mapDispatchToProps = {
-  setStage
+  setStage,
+  injectScript,
+  connectPort
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Popup);

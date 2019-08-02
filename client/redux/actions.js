@@ -8,6 +8,14 @@ export const portDisconnected = () => ({
   type: constants.PORT_DISCONNECTED
 });
 
+export const injectScript = () => ({
+  type: constants.INJECT_SCRIPT
+});
+
+export const scriptInjected = () => ({
+  type: constants.SCRIPT_INJECTED
+});
+
 export const portSendMessage = (message) => ({
   type: constants.PORT_SEND_MESSAGE,
   message

@@ -5,16 +5,7 @@
   "permissions": [
     "activeTab",
     "storage",
-    "https://together-play.herokuapp.com/*",
-    "http://localhost:3000/*"
-  ],
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["contentscript.js"],
-      "css": ["style.css"],
-      "all_frames": true
-    }
+    "https://together-play.herokuapp.com/*"
   ],
   "background": {
     "scripts": ["background.js"]

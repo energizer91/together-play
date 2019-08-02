@@ -7,11 +7,16 @@ const initialState = {
   connected: false,
   state: '',
   portConnected: false,
+  scriptInjected: false,
   stage: 'start'
 };
 
 export default (state = initialState, action) => {
   switch (action.type) {
+    case constants.SCRIPT_INJECTED:
+      return Object.assign({}, state, {
+        scriptInjected: true
+      });
     case constants.SET_STAGE:
       return Object.assign({}, state, {
         stage: action.stage
