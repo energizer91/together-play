@@ -1,7 +1,18 @@
 'use strict';
 
+const readyStates = {
+  CONNECTING: 0,
+  OPEN: 1,
+  CLOSING: 2,
+  CLOSED: 3
+};
+
 function getVideoContainers() {
   return Array.from(document.querySelectorAll('video'));
+}
+
+function getLocation() {
+  return location.toString()
 }
 
 function getContainerName(container) {
@@ -33,6 +44,7 @@ class Player {
     this.playing = false;
     this.playable = false;
 
+    this.remoteUrl = '';
     this.remoteContainer = '';
     this.remotePlaying = false;
     this.remotePlayable = false;
@@ -125,6 +137,7 @@ class Player {
 
   synchronize(data) {
     this.remoteContainer = data.container;
+    this.remoteUrl = data.url;
     this.remotePlaying = data.playing;
     this.remotePlayable = data.playable;
 
@@ -137,6 +150,7 @@ class Player {
     this.send({
       type: 'INITIALIZE',
       container: getContainerName(this.container),
+      url: getLocation(),
       playing: this.playing,
       playable: this.playable,
       time: this.container.currentTime
@@ -201,6 +215,9 @@ class Player {
     setIcon(false);
 
     this.remoteContainer = '';
+    this.remoteUrl = '';
+    this.remotePlayable = false;
+    this.remotePlaying = false;
   }
 
   connect(id) {
@@ -287,6 +304,10 @@ class Player {
 
   send(message) {
     if (!this.connection) {
+      return;
+    }
+
+    if (this.connection.readyState !== readyStates.OPEN) {
       return;
     }
 
@@ -455,6 +476,11 @@ chrome.runtime.onConnect.addListener(port => {
     }
 
     switch (message.type) {
+      case 'change_location':
+        if (player.remoteUrl) {
+          location.href = player.remoteUrl;
+        }
+        break;
       case 'get_containers':
         containers = getVideoContainers();
 
@@ -505,7 +531,7 @@ chrome.runtime.onConnect.addListener(port => {
             container: player.container && player.container.currentSrc,
             connected: player.connected,
             id: player.id,
-            localhost: player.localhost
+            shouldChangeLocation: player.remoteUrl && getLocation() !== player.remoteUrl
           }
         });
         break;

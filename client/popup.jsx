@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
-import {setStage} from './redux/actions';
+import {setStage, connectPort} from './redux/actions';
 
 import Main from './views/Main.jsx';
 import Settings from './views/Settings.jsx';
@@ -8,6 +8,10 @@ import Settings from './views/Settings.jsx';
 import StatusBar from './components/StatusBar.jsx';
 
 class Popup extends Component {
+  componentDidMount() {
+    this.props.connectPort();
+  }
+
   reset = () => {
     this.props.setStage('start');
   };
@@ -45,11 +49,13 @@ class Popup extends Component {
 }
 
 const mapStateToProps = state => ({
-  stage: state.stage
+  stage: state.stage,
+  portConnected: state.portConnected
 });
 
 const mapDispatchToProps = {
-  setStage
+  setStage,
+  connectPort
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Popup);

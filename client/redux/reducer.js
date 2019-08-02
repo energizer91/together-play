@@ -5,6 +5,7 @@ const initialState = {
   container: '',
   containers: [],
   connected: false,
+  shouldChangeLocation: false,
   state: '',
   portConnected: false,
   stage: 'start'
@@ -54,7 +55,8 @@ export default (state = initialState, action) => {
         id: action.status.id,
         container: action.status.container,
         state: action.status.state,
-        connected: action.status.connected
+        connected: action.status.connected,
+        shouldChangeLocation: action.status.shouldChangeLocation
       });
     default:
       return state;

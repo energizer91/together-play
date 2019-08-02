@@ -83,6 +83,10 @@ class ConnectBlock extends PureComponent {
     this.copyTimeout = setTimeout(() => this.setState({copied: false}), 3000);
   };
 
+  changeLocation = () => {
+    this.props.sendMessage({type: 'change_location'});
+  };
+
   renderStage() {
     const {id} = this.props;
     const {stage, friendId, copied} = this.state;
@@ -149,6 +153,11 @@ class ConnectBlock extends PureComponent {
     return (
       <div>
         {this.renderStage()}
+        {this.props.portConnected && this.props.shouldChangeLocation && (
+          <div className="button-container" style={{marginTop: 20}}>
+            <button className="button" onClick={this.changeLocation}>Change website</button>
+          </div>
+        )}
       </div>
     )
   }
@@ -156,7 +165,9 @@ class ConnectBlock extends PureComponent {
 
 const mapStateToProps = state => ({
   id: state.id,
-  connected: state.connected
+  connected: state.connected,
+  portConnected: state.portConnected,
+  shouldChangeLocation: state.shouldChangeLocation
 });
 
 const mapDispatchToProps = {
